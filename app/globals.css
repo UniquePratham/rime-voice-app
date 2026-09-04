@@ -159,12 +159,14 @@ button {
   gap: var(--space-3);
 }
 
-.gutter wordmark {
+.wordmark,
+.gutter .wordmark {
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--color-foreground);
+  font-weight: 600;
 }
 
 .gutter-gap {
@@ -180,6 +182,44 @@ button {
 }
 
 /* ============================================================
+   Mobile Tabs Control (Hidden on desktop)
+   ============================================================ */
+
+.mobile-tabs {
+  display: none;
+  border-bottom: var(--border-hair);
+  background: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.mobile-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.mobile-tab.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  background: rgba(255, 176, 58, 0.05);
+}
+
+/* ============================================================
    Main board
    ============================================================ */
 
@@ -191,10 +231,8 @@ button {
   align-items: start;
 }
 
-@media (max-width: 880px) {
-  .board {
-    grid-template-columns: 1fr;
-  }
+.board-col {
+  min-width: 0;
 }
 
 /* ============================================================
@@ -405,17 +443,23 @@ button {
    Input bar / talk button
    ============================================================ */
 
+.dock-container {
+  width: 100%;
+}
+
 .dock {
   padding: var(--space-4) 0 var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
+  width: 100%;
 }
 
 .talk-button {
   position: relative;
-  min-width: min(560px, 100%);
+  width: 100%;
+  max-width: 560px;
   height: 56px;
   display: flex;
   align-items: center;
@@ -425,11 +469,25 @@ button {
   background: var(--color-surface);
   color: var(--color-muted);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.dock-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 560px;
 }
 
 .talk-button:hover:not(:disabled) {
@@ -770,5 +828,186 @@ button {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   Mobile & Tablet Responsive Layout
+   ============================================================ */
+
+@media (max-width: 880px) {
+  .frame {
+    padding: 0 var(--space-3);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gutter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    padding: var(--space-3) 0 var(--space-2);
+  }
+
+  .gutter-l {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .gutter-r {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: var(--space-2);
+  }
+
+  .gutter-gap {
+    display: none;
+  }
+
+  .gutter-l .subtitle {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .transport-badge {
+    display: none;
+  }
+
+  .provider-badge {
+    font-size: 10px;
+  }
+
+  /* Show mobile tabs */
+  .mobile-tabs {
+    display: flex;
+  }
+
+  .board {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: var(--space-4);
+    padding: var(--space-3) 0 var(--space-4);
+  }
+
+  .board-col.mobile-hidden {
+    display: none !important;
+  }
+
+  .board-col.mobile-active {
+    display: block !important;
+    width: 100%;
+  }
+
+  .mobile-hide-program {
+    display: none !important;
+  }
+
+  .mobile-show-eval {
+    display: block !important;
+  }
+
+  .signal-zone {
+    padding: var(--space-3) 0;
+  }
+
+  .orb {
+    width: clamp(110px, 32vw, 140px);
+  }
+
+  .transcript {
+    min-height: 140px;
+    max-height: 250px;
+  }
+
+  /* Sticky bottom dock on mobile devices */
+  .dock-container {
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    background: rgba(22, 19, 15, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: var(--border-hair);
+    padding: var(--space-2) var(--space-3) max(var(--space-3), env(safe-area-inset-bottom));
+    margin: 0 calc(-1 * var(--space-3));
+  }
+
+  .dock {
+    padding: 0;
+    gap: var(--space-2);
+  }
+
+  .talk-button {
+    height: 52px;
+    font-size: 12px;
+  }
+
+  .desktop-kbd {
+    display: none !important;
+  }
+
+  .dock-secondary {
+    gap: var(--space-2);
+    justify-content: space-between;
+  }
+
+  .dock-secondary .ghost-btn {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .dock-row {
+    gap: var(--space-2);
+  }
+
+  .ghost-select {
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+
+  .eval-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .eval-row {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .frame {
+    padding: 0 var(--space-2);
+  }
+
+  .dock-container {
+    margin: 0 calc(-1 * var(--space-2));
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+
+  .program-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .ex-spec {
+    gap: var(--space-2);
+    font-size: 10px;
+  }
+
+  .turn-line {
+    grid-template-columns: 36px 1fr;
+    gap: var(--space-2);
+  }
+
+  .turn-text {
+    font-size: 14px;
   }
 }

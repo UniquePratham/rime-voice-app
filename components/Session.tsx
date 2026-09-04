@@ -25,6 +25,7 @@ export default function Session() {
   const { vm, actions, evalData, runtime, sttStatus, holding } = useSession();
   const [evalOpen, setEvalOpen] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"copilot" | "program" | "eval">("copilot");
   const holdRef = useRef(false);
   const spaceDown = useRef(false);
   const rimeConfig = runtime.rimeConfig;
@@ -93,13 +94,13 @@ export default function Session() {
           <span className="gutter-gap" aria-hidden="true">
             /
           </span>
-          <span className="label">voice-native coaching copilot</span>
+          <span className="label subtitle">voice-native coaching copilot</span>
         </div>
         <div className="gutter-r">
-          <span className="meta" title={rimeConfig.endpoint}>
+          <span className="meta transport-badge" title={rimeConfig.endpoint}>
             {rimeConfig.transport}
           </span>
-          <span className={`meta ${vm.provider.provider === "fallback" ? "danger" : ""}`}>
+          <span className={`meta provider-badge ${vm.provider.provider === "fallback" ? "danger" : ""}`}>
             {vm.provider.provider === "fallback" ? "FALLBACK AUDIO" : `Rime · ${vm.provider.voice}`}
           </span>
           <button type="button" className="ghost-btn" onClick={() => setShowManual((v) => !v)} aria-expanded={showManual}>
@@ -117,14 +118,49 @@ export default function Session() {
             measured in the panel below.
           </p>
           <ul>
-            <li>Hold <kbd className="kbd">Space</kbd> or the button, speak, then release.</li>
+            <li>Hold the button (or hold <kbd className="kbd">Space</kbd>), speak, then release.</li>
             <li>While Spotter is speaking, hold it again and correct it — immediately.</li>
           </ul>
         </section>
       )}
 
+      {/* Mobile-only tab bar for switching between Copilot, Program, and Evidence */}
+      <nav className="mobile-tabs" role="tablist" aria-label="Mobile navigation">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === "copilot"}
+          className={`mobile-tab ${mobileTab === "copilot" ? "active" : ""}`}
+          onClick={() => setMobileTab("copilot")}
+        >
+          <span className="dot" aria-hidden="true" />
+          Copilot
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === "program"}
+          className={`mobile-tab ${mobileTab === "program" ? "active" : ""}`}
+          onClick={() => setMobileTab("program")}
+        >
+          Program
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === "eval"}
+          className={`mobile-tab ${mobileTab === "eval" ? "active" : ""}`}
+          onClick={() => setMobileTab("eval")}
+        >
+          Evidence
+        </button>
+      </nav>
+
       <div className="board">
-        <section aria-label="Voice session">
+        <section
+          aria-label="Voice session"
+          className={`board-col col-session ${mobileTab === "copilot" ? "mobile-active" : "mobile-hidden"}`}
+        >
           <div className="signal-zone">
             <Orb phase={vm.phase} level={vm.level} status={statusLine} onInterrupt={() => stopHold(true)} />
           </div>
@@ -138,90 +174,119 @@ export default function Session() {
             </div>
             <Transcript lines={vm.transcript} interim={vm.interim} />
           </div>
+        </section>
 
-          <div className="dock">
-            <button
-              type="button"
-              className="talk-button"
-              data-pressed={holding ? "true" : "false"}
-              onPointerDown={() => {
-                holdRef.current = true;
-                actions.beginHold();
-              }}
-              onPointerUp={() => stopHold(false)}
-              onPointerLeave={() => stopHold(true)}
-              disabled={!sttStatus.ok}
+        <aside
+          aria-label="Live program and evidence"
+          className={`board-col col-aside ${mobileTab !== "copilot" ? "mobile-active" : "mobile-hidden"}`}
+        >
+          <div className={`program-wrapper ${mobileTab === "program" || mobileTab === "copilot" ? "" : "mobile-hide-program"}`}>
+            <ProgramView program={vm.program} />
+          </div>
+          <div className={`eval-wrapper ${mobileTab === "eval" ? "mobile-show-eval" : ""}`}>
+            <details
+              className="eval-toggle"
+              open={evalOpen || mobileTab === "eval"}
+              onToggle={(e) => setEvalOpen((e.target as HTMLDetailsElement).open)}
             >
-              {sttStatus.ok ? (
-                <>
-                  <span className="dot" aria-hidden="true" />
-                  hold to talk
-                  <span className="kbd" aria-hidden="true">
-                    space
-                  </span>
-                </>
-              ) : (
-                "Microphone unavailable"
-              )}
-            </button>
-            {micBlockMessage && (
-              <p className="mic-block" role="alert">
-                {micBlockMessage}
-              </p>
+              <summary className="eval-summary">
+                <span className="label">evidence panel</span>
+                <span className="meta">{evalOpen || mobileTab === "eval" ? "hide" : "show"}</span>
+              </summary>
+              <EvalPanel eval={evalData} vm={vm} />
+            </details>
+          </div>
+        </aside>
+      </div>
+
+      {/* Global dock with talk button and demo controls - sticky on mobile */}
+      <footer className="dock-container" aria-label="Interaction controls">
+        <div className="dock">
+          <button
+            type="button"
+            className="talk-button"
+            data-pressed={holding ? "true" : "false"}
+            onPointerDown={(e) => {
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId);
+              } catch {}
+              holdRef.current = true;
+              actions.beginHold();
+            }}
+            onPointerUp={(e) => {
+              try {
+                if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+                  e.currentTarget.releasePointerCapture(e.pointerId);
+                }
+              } catch {}
+              stopHold(false);
+            }}
+            onPointerCancel={(e) => {
+              try {
+                if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+                  e.currentTarget.releasePointerCapture(e.pointerId);
+                }
+              } catch {}
+              stopHold(true);
+            }}
+            onContextMenu={(e) => e.preventDefault()}
+            disabled={!sttStatus.ok}
+          >
+            {sttStatus.ok ? (
+              <>
+                <span className="dot" aria-hidden="true" />
+                <span>hold to talk</span>
+                <span className="kbd desktop-kbd" aria-hidden="true">
+                  space
+                </span>
+              </>
+            ) : (
+              "Microphone unavailable"
             )}
+          </button>
+          {micBlockMessage && (
+            <p className="mic-block" role="alert">
+              {micBlockMessage}
+            </p>
+          )}
+          <div className="dock-secondary">
             <button type="button" className="ghost-btn" onClick={() => actions.reset()}>
               Reset session
             </button>
+            <div className="dock-row" role="group" aria-label="Demo controls">
+              <label className="dock-row-item">
+                <span className="label">delay</span>
+                <select
+                  className="ghost-select"
+                  defaultValue="0"
+                  onChange={(e) => {
+                    actions.setSimulatedDelay(Number(e.target.value));
+                    e.currentTarget.blur();
+                  }}
+                >
+                  <option value="0">0ms</option>
+                  <option value="600">600ms</option>
+                  <option value="1500">1500ms</option>
+                </select>
+              </label>
+              <label className="dock-row-item">
+                <span className="label">tts</span>
+                <select
+                  className="ghost-select"
+                  defaultValue="rime"
+                  onChange={(e) => {
+                    actions.setFallback(e.target.value === "fallback");
+                    e.currentTarget.blur();
+                  }}
+                >
+                  <option value="rime">Rime</option>
+                  <option value="fallback">browser</option>
+                </select>
+              </label>
+            </div>
           </div>
-
-          <div className="dock-row" role="group" aria-label="Demo controls">
-            <label className="dock-row-item">
-              <span className="label">tool delay</span>
-              <select
-                className="ghost-select"
-                defaultValue="0"
-                onChange={(e) => {
-                  actions.setSimulatedDelay(Number(e.target.value));
-                  e.currentTarget.blur();
-                }}
-              >
-                <option value="0">none</option>
-                <option value="600">600 ms</option>
-                <option value="1500">1500 ms</option>
-              </select>
-            </label>
-            <label className="dock-row-item">
-              <span className="label">tts path</span>
-              <select
-                className="ghost-select"
-                defaultValue="rime"
-                onChange={(e) => {
-                  actions.setFallback(e.target.value === "fallback");
-                  e.currentTarget.blur();
-                }}
-              >
-                <option value="rime">Rime (default)</option>
-                <option value="fallback">browser fallback</option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <aside aria-label="Live program">
-          <ProgramView program={vm.program} />
-          <details
-            className="eval-toggle"
-            open={evalOpen}
-            onToggle={(e) => setEvalOpen((e.target as HTMLDetailsElement).open)}
-          >
-            <summary className="eval-summary">
-              <span className="label">evidence panel</span>
-              <span className="meta">{evalOpen ? "hide" : "show"}</span>
-            </summary>
-            <EvalPanel eval={evalData} vm={vm} />
-          </details>
-        </aside>
-      </div>
+        </div>
+      </footer>
     </main>
   );
 }
