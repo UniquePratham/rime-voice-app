@@ -1,0 +1,14 @@
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+*.log
+.git
+.gitignore
+Prompt.md
+docs/
+tests/
+*.md
+!README.md
+!RIME_EVIDENCE.md
